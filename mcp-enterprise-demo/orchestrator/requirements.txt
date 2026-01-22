@@ -2,5 +2,5 @@ fastapi
 uvicorn[standard]
 requests
 pydantic
-langchain
-python-dotenv
+langchain>=0.0.300
+openai

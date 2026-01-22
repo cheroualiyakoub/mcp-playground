@@ -83,6 +83,50 @@ Return STRICT JSON:
         return "unknown"
 
 
+# -------------------------
+# Optional LangChain agent
+# -------------------------
+try:
+    # Lazy import so orchestrator can run without langchain installed
+    from langchain.chat_models import ChatOpenAI  # type: ignore
+    from langchain.agents import initialize_agent, Tool, AgentType  # type: ignore
+    LANGCHAIN_AVAILABLE = True
+except Exception:
+    LANGCHAIN_AVAILABLE = False
+
+from orchestrator import tools as oc_tools
+from orchestrator import prompt as oc_prompt
+
+
+def build_langchain_agent():
+    """Build a LangChain agent wired to the safe tool wrappers in orchestrator.tools.
+
+    Returns the initialized agent or raises if building fails.
+    """
+    if not LANGCHAIN_AVAILABLE:
+        raise RuntimeError("langchain not available")
+
+    model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY not set")
+
+    llm = ChatOpenAI(temperature=0, model=model_name, openai_api_key=api_key)
+
+    tools = [
+        Tool(name="authorize", func=oc_tools.authorize_tool, description="Authorize a user for an action. Input: JSON string with keys 'user','action','trace_id'. Returns JSON string."),
+        Tool(name="evaluate_risk", func=oc_tools.evaluate_risk_tool, description="Evaluate risk for an action. Input: JSON string; returns JSON string."),
+        Tool(name="approve", func=oc_tools.approve_tool, description="Approve a pending high-risk action. Input: JSON string; returns JSON string."),
+        Tool(name="execute_action", func=oc_tools.execute_action_tool, description="Execute an approved action. Input: JSON string; returns JSON string. This tool enforces identity checks before calling Operations MCP."),
+        Tool(name="query_observability", func=oc_tools.query_observability_tool, description="Query observability/audit. Input: JSON string; returns JSON string."),
+        Tool(name="check_secret", func=oc_tools.check_secret_tool, description="Check a secret path for access rules. Input: JSON string; returns JSON string."),
+        Tool(name="log_audit", func=oc_tools.log_audit_tool, description="Append an audit entry. Input: JSON string; returns JSON string."),
+    ]
+
+    agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=False)
+    return agent
+
+
 @app.post("/run")
 def run_prompt(p: PromptIn):
     trace_id = str(uuid.uuid4())
@@ -93,7 +137,19 @@ def run_prompt(p: PromptIn):
         "role": "admin" if p.token == "admin-token" else "user"
     }
 
-    # 1️⃣ AI decides intent
+    # If LangChain is enabled and available, prefer running the tool-driven agent.
+    enable_langchain = os.getenv("ENABLE_LANGCHAIN", "false").lower() == "true"
+    if enable_langchain and LANGCHAIN_AVAILABLE and os.getenv("OPENAI_API_KEY"):
+        try:
+            agent = build_langchain_agent()
+            instruction = oc_prompt.build_agent_prompt(p.prompt, user, trace_id)
+            result = agent.run(instruction)
+            # Agent is expected to call tools (which will perform MCP calls and audit logging).
+            return {"status": "ok", "agent_result": result, "trace_id": trace_id}
+        except Exception as e:
+            print("LangChain agent failed, falling back to classifier:", e)
+
+    # 1️⃣ AI decides intent (fallback classifier)
     action = classify_intent_with_ai(p.prompt)
 
     # 2️⃣ Identity / Policy MCP
