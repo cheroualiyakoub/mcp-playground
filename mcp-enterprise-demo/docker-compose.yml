@@ -14,8 +14,8 @@ services:
       - OBSERVABILITY_MCP_URL=http://observability:8003
       - AUDIT_MCP_URL=http://audit:8006
       - ENABLE_LANGCHAIN=true
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-4o-mini}
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
     ports:
