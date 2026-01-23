@@ -39,6 +39,28 @@
         .header p {
             color: #666;
             font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-nav a {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .header-nav a:hover {
+            transform: translateY(-2px);
         }
 
         .main-grid {
@@ -307,6 +329,10 @@
         <div class="header">
             <h1>🚀 MCP Orchestrator - Workshop Debug Console</h1>
             <p>Test multi-step prompts, view security governance flow, and debug MCP interactions</p>
+            <div class="header-nav">
+                <a href="architecture.html">📋 View Architecture</a>
+                <a href="https://github.com/cheroualiyakoub/mcp-playground" target="_blank">📦 GitHub Repo</a>
+            </div>
         </div>
 
         <div class="main-grid">
