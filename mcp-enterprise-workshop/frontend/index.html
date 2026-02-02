@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Orchestrator - Workshop Debug Console</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-nav a {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .header-nav a:hover {
+            transform: translateY(-2px);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .quick-action-btn {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .quick-action-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .response-panel {
+            grid-column: 1 / -1;
+        }
+
+        .response-content {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .response-content.visible {
+            display: block;
+        }
+
+        .response-summary {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .response-summary h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .response-summary p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .trace-id {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .logs-container {
+            margin-top: 15px;
+        }
+
+        .logs-header {
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .log-entry {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .log-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .log-tool {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .log-action {
+            background: #f5f5f5;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .log-result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            border-radius: 5px;
+            color: #721c24;
+        }
+
+        .info-badge {
+            display: inline-block;
+            background: #17a2b8;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 MCP Orchestrator - Workshop Debug Console</h1>
+            <p>Test multi-step prompts, view security governance flow, and debug MCP interactions</p>
+            <div class="header-nav">
+                <a href="architecture.html">📋 View Architecture</a>
+                <a href="https://github.com/cheroualiyakoub/mcp-playground" target="_blank">📦 GitHub Repo</a>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="panel">
+                <h2>📝 Request Configuration</h2>
+                
+                <div class="form-group">
+                    <label for="userId">User ID</label>
+                    <select id="userId">
+                        <option value="alice">alice (Admin)</option>
+                        <option value="bob">bob (Operator)</option>
+                        <option value="charlie">charlie (Viewer)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="token">Authentication Token</label>
+                    <input type="text" id="token" value="admin-token" placeholder="Enter token">
+                </div>
+
+                <div class="form-group">
+                    <label for="prompt">Prompt</label>
+                    <textarea id="prompt" placeholder="Enter your prompt here...">hello, how are you? and restart the service</textarea>
+                </div>
+
+                <button class="btn" onclick="sendRequest()">
+                    🚀 Send Request
+                </button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing request...</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions Panel -->
+            <div class="panel">
+                <h2>⚡ Quick Test Prompts</h2>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="setPrompt('hello, how are you?')">
+                        👋 Greeting
+                    </button>
+                    <button class="quick-action-btn" onclick="setPrompt('what is 5 + 5?')">
+                        🧮 Math Question
+                    </button>
+                    <button class="quick-action-btn" onclick="setPrompt('restart the service')">
+                        🔄 Restart Service
+                    </button>
+                    <button class="quick-action-btn" onclick="setPrompt('hello! and restart the service')">
+                        💬 Mixed Request
+                    </button>
+                    <button class="quick-action-btn" onclick="setPrompt('check system metrics')">
+                        📊 Query Observability
+                    </button>
+                    <button class="quick-action-btn" onclick="setPrompt('what is my role?')">
+                        👤 User Info
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 16px; margin-bottom: 10px; color: #555;">📚 Test Scenarios:</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span class="info-badge">Low Risk</span>
+                            <span style="font-size: 13px;">Risk score < 50 - auto-approved</span>
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span class="info-badge">High Risk</span>
+                            <span style="font-size: 13px;">Risk score ≥ 50 - needs approval</span>
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span class="info-badge">Admin</span>
+                            <span style="font-size: 13px;">alice - Full permissions</span>
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span class="info-badge">Operator</span>
+                            <span style="font-size: 13px;">bob - Limited permissions</span>
+                        </li>
+                        <li style="padding: 8px 0;">
+                            <span class="info-badge">Viewer</span>
+                            <span style="font-size: 13px;">charlie - Read-only</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Panel -->
+        <div class="panel response-panel">
+            <h2>📊 Response & Debug Info</h2>
+            
+            <div class="response-content" id="responseContent">
+                <div id="traceId"></div>
+                
+                <div class="response-summary" id="responseSummary"></div>
+
+                <div class="logs-container" id="logsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        function setPrompt(text) {
+            document.getElementById('prompt').value = text;
+        }
+
+        async function sendRequest() {
+            const userId = document.getElementById('userId').value;
+            const token = document.getElementById('token').value;
+            const prompt = document.getElementById('prompt').value;
+
+            if (!prompt.trim()) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('responseContent').classList.remove('visible');
+            
+            // Disable button
+            const btn = document.querySelector('.btn');
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/run`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        token: token,
+                        prompt: prompt
+                    })
+                });
+
+                const data = await response.json();
+                displayResponse(data);
+            } catch (error) {
+                displayError(error);
+            } finally {
+                // Hide loading
+                document.getElementById('loading').classList.remove('active');
+                btn.disabled = false;
+            }
+        }
+
+        function displayResponse(data) {
+            // Show response content
+            document.getElementById('responseContent').classList.add('visible');
+
+            // Display trace ID
+            document.getElementById('traceId').innerHTML = `
+                <div class="trace-id">
+                    <strong>Trace ID:</strong> ${data.trace_id || 'N/A'}
+                </div>
+            `;
+
+            // Display summary
+            const summaryEl = document.getElementById('responseSummary');
+            summaryEl.innerHTML = `
+                <h3>🤖 Agent Response:</h3>
+                <p>${data.summary || 'No response'}</p>
+            `;
+
+            // Display logs
+            const logsContainer = document.getElementById('logsContainer');
+            if (data.logs && data.logs.length > 0) {
+                logsContainer.innerHTML = `
+                    <div class="logs-header">
+                        🔍 Execution Flow (${data.logs.length} tool calls):
+                    </div>
+                `;
+
+                data.logs.forEach((log, index) => {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    
+                    const resultHtml = formatResult(log.result);
+                    
+                    logEntry.innerHTML = `
+                        <div class="log-entry-header">
+                            <span class="log-tool">Step ${index + 1}: ${log.tool}</span>
+                            ${log.action ? `<span class="log-action">${log.action}</span>` : ''}
+                        </div>
+                        ${log.user ? `<div style="font-size: 12px; color: #666; margin-bottom: 5px;">
+                            User: ${log.user.user_id} (${log.user.role})
+                        </div>` : ''}
+                        <div class="log-result">
+                            ${resultHtml}
+                        </div>
+                    `;
+                    
+                    logsContainer.appendChild(logEntry);
+                });
+            } else {
+                logsContainer.innerHTML = `
+                    <div style="padding: 15px; background: #fff3cd; border-radius: 5px; color: #856404;">
+                        ℹ️ No tool calls were made (conversational response only)
+                    </div>
+                `;
+            }
+        }
+
+        function formatResult(result) {
+            if (!result) return 'No result';
+            
+            // Pretty print JSON
+            try {
+                const formatted = JSON.stringify(result, null, 2);
+                return `<pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(formatted)}</pre>`;
+            } catch (e) {
+                return escapeHtml(String(result));
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function displayError(error) {
+            document.getElementById('responseContent').classList.add('visible');
+            document.getElementById('responseContent').innerHTML = `
+                <div class="error">
+                    <h3 style="margin-bottom: 10px;">❌ Error</h3>
+                    <p><strong>Message:</strong> ${error.message}</p>
+                    <p style="margin-top: 10px;"><strong>Details:</strong> Failed to connect to orchestrator. Make sure the service is running on ${API_URL}</p>
+                </div>
+            `;
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('prompt').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                sendRequest();
+            }
+        });
+    </script>
+</body>
+</html>
