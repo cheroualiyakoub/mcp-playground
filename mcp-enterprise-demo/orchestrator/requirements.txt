@@ -1,8 +1,0 @@
-fastapi
-uvicorn[standard]
-requests
-pydantic
-langchain>=0.0.300
-langchain-community>=0.4.0
-langchain-openai
-openai
